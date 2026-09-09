@@ -1,0 +1,116 @@
+/* =====================================================================
+   DuelVault — Tokens de diseño
+   Extraídos de los bocetos aprobados. Colocar en Angular como
+   src/styles/_tokens.css e importar desde styles.css.
+   ===================================================================== */
+
+:root {
+  /* --- Tipografía -------------------------------------------------- */
+  /* <link rel="stylesheet"
+     href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Space+Grotesk:wght@400;500;700&display=swap"> */
+  --font-display: 'Instrument Serif', Georgia, 'Times New Roman', serif;
+  --font-ui: 'Space Grotesk', 'DM Sans', system-ui, -apple-system, sans-serif;
+
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   15px;
+  --text-xl:   18px;
+  --display-sm: 24px;
+  --display-md: 32px;
+  --display-lg: 52px;
+
+  --tracking-caps: 0.14em;   /* etiquetas en mayúsculas */
+
+  /* --- Espaciado y formas ------------------------------------------ */
+  --space-1: 4px;   --space-2: 8px;   --space-3: 12px;  --space-4: 16px;
+  --space-5: 20px;  --space-6: 26px;  --space-7: 32px;  --space-8: 48px;
+
+  --radius-sm: 2px;   /* controles y chips */
+  --radius-md: 4px;   /* tarjetas y paneles */
+  --radius-lg: 16px;  /* hojas inferiores en móvil */
+
+  /* --- Tema oscuro: entrada inmersiva (estantería y carpeta) -------- */
+  --d-bg:            #0A0A0E;
+  --d-bg-raised:     #0F0F14;
+  --d-bg-elevated:   #17171E;
+  --d-panel:         #1B1B23;
+  --d-wood:          #2B2721;
+  --d-wood-dark:     #201C17;
+  --d-shelf:         #353029;
+
+  --d-text:          #F2F2F5;
+  --d-text-soft:     #C2C2CE;
+  --d-text-dim:      #A0A0B0;
+  --d-text-muted:    #8C8C9C;
+
+  --gold:            #F5C542;   /* único acento del tema oscuro */
+  --gold-soft:       #FFD96B;
+  --gold-line:       rgba(245, 197, 66, 0.16);
+  --gold-border:     rgba(245, 197, 66, 0.35);
+
+  /* --- Tema claro: pantallas de trabajo ----------------------------- */
+  --l-bg:            #F7F8FA;
+  --l-surface:       #FFFFFF;
+  --l-border:        #E4E7EC;
+  --l-border-soft:   #EBEDF0;
+  --l-border-strong: #D6DAE0;
+  --l-border-input:  #B8BDC6;
+  --l-fill:          #EEF0F3;   /* chips y pistas de barra */
+
+  --ink:             #14161A;
+  --ink-2:           #2B2F36;
+  --ink-3:           #3D434C;
+  --muted:           #5A6270;
+  --muted-2:         #7A828E;
+  --muted-3:         #949BA6;
+  --muted-4:         #A2A9B4;
+
+  --amber:           #E0A400;   /* acento en claro: rellenos y bordes */
+  --amber-ink:       #B07500;   /* texto y marcas sobre blanco (contraste 4,3:1) */
+  --amber-tint:      #FFF8E1;
+  --amber-tint-soft: #FFFBEE;
+  --amber-border:    #F5DFA0;
+
+  --ok:              #0B7A55;
+  --ok-tint:         #E7F6EE;
+  --ok-border:       #BFE5CE;
+
+  /* --- Color por tipo de carta (el ancla visual del producto) ------- */
+  /* Cada uno con su variante clara para degradados de miniatura.      */
+  --card-normal:     #FFCE1F;  --card-normal-lt:    #FFD94D;
+  --card-efecto:     #FF7A1A;  --card-efecto-lt:    #FF9640;
+  --card-ritual:     #3B82F6;  --card-ritual-lt:    #60A5FA;
+  --card-fusion:     #A855F7;  --card-fusion-lt:    #C084FC;
+  --card-sincronia:  #D5D5DC;  --card-sincronia-lt: #E8E8EC;
+  --card-xyz:        #1F2026;  --card-xyz-lt:       #33343D;
+  --card-enlace:     #2563EB;  --card-enlace-lt:    #4D8DF7;
+  --card-magica:     #00C08B;  --card-magica-lt:    #22D6A0;
+  --card-trampa:     #F5308E;  --card-trampa-lt:    #FF5FAE;
+
+  /* --- Color por atributo (puntos de 12-18 px, nunca solos) --------- */
+  --atr-oscuridad:   #6D28D9;
+  --atr-luz:         #FFCE1F;
+  --atr-tierra:      #A16207;
+  --atr-agua:        #2563EB;
+  --atr-fuego:       #EA580C;
+  --atr-viento:      #059669;
+  --atr-divino:      #F5C542;
+
+  /* --- Gráficas ----------------------------------------------------- */
+  /* Un solo tono: los colores del juego no superan el umbral de
+     separación para daltonismo deutan, así que la identidad de cada
+     serie va en la etiqueta directa, nunca solo en el color.          */
+  --chart-mark:      #B07500;
+  --chart-fill:      rgba(176, 117, 0, 0.07);
+  --chart-grid:      #EBEDF0;
+  --chart-axis:      #D6DAE0;
+  --chart-label:     #949BA6;
+}
+
+/* Regla de uso del color de tipo de carta:
+   - Cabecera de la ficha de detalle: fondo con el color del tipo.
+   - Miniaturas: degradado 160deg de la variante clara a la base.
+   - Listados y filtros: cuadrado de 10-12 px junto al texto.
+   Nunca es el único portador de información: siempre hay etiqueta. */

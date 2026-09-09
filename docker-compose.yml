@@ -1,0 +1,22 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: duelvault-db
+    restart: unless-stopped
+    environment:
+      # Credenciales de desarrollo. No usar en despliegue.
+      POSTGRES_DB: duelvault
+      POSTGRES_USER: duelvault
+      POSTGRES_PASSWORD: duelvault
+    ports:
+      - "5432:5432"
+    volumes:
+      - duelvault-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U duelvault -d duelvault"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  duelvault-pgdata:
