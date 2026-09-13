@@ -3,7 +3,7 @@ spring:
     name: backend
 
   datasource:
-    url: ${DB_URL:jdbc:postgresql://localhost:5432/duelvault}
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/duelvault?currentSchema=duelvault}
     username: ${DB_USER:duelvault}
     password: ${DB_PASSWORD:duelvault}
 
@@ -12,3 +12,5 @@ spring:
     locations: classpath:db/migration
     # Falla si encuentra la base ya poblada sin tabla de historial.
     baseline-on-migrate: false
+    schemas:
+      - duelvault
