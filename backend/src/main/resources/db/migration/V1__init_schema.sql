@@ -14,6 +14,12 @@
 -- desplegada, así que no había historia real que conservar: las cuatro
 -- documentaban la evolución del diseño, no la de un sistema en marcha, y
 -- esa historia vive donde debe, en 03-Modelo-de-datos y 07-Casos-limite.
+-- REVISION 2026-09-14 (antes del primer despliegue, sin base desplegada):
+-- se declara el esquema en vez de heredarlo de Flyway, se cierran los dos
+-- CHECK que faltaban para emparejar marco y medida en Xyz y Enlace, se
+-- documenta la cadena de borrado carta/set -> impresion -> ejemplar, y
+-- binder_summary separa las cartas asignadas de las ya colocadas.
+--
 -- A partir de aquí, cada cambio SÍ es una migración nueva.
 --
 -- DOCUMENTACIÓN: todos los objetos llevan COMMENT ON. Los comentarios
@@ -23,9 +29,26 @@
 -- =====================================================================
 
 -- ---------------------------------------------------------------------
+-- 0. Esquema
+--    immutable_unaccent() mas abajo cita el diccionario por su nombre
+--    completo (duelvault.unaccent), asi que el esquema no puede quedar
+--    implicito en la configuracion de Flyway: si el fichero se ejecuta
+--    con psql, o si algun dia cambia default-schema, la funcion apuntaria
+--    a un diccionario inexistente y el error saldria lejos de aqui, en el
+--    primer INSERT de una traduccion. Se declara la dependencia.
+--
+--    El search_path afecta solo a esta sesion, que es justo lo que se
+--    quiere: fija donde se crean las extensiones de abajo.
+-- ---------------------------------------------------------------------
+
+CREATE SCHEMA IF NOT EXISTS duelvault;
+SET search_path TO duelvault, public;
+
+-- ---------------------------------------------------------------------
 -- 0 bis. Extensiones
 --    Ambas son "trusted" desde PostgreSQL 13: las puede instalar el
 --    propietario de la base de datos, no hace falta superusuario.
+--    Se crean en el esquema duelvault, que es el primero del search_path.
 -- ---------------------------------------------------------------------
 
 -- Trigramas: aceleran las búsquedas por subcadena (ILIKE '%mago%'), que
@@ -400,6 +423,14 @@ CREATE TABLE monster_cards (
         CHECK (xyz_rank IS NULL OR frame = 'XYZ'),
     CONSTRAINT ck_monster_link_only_link
         CHECK (link_rating IS NULL OR frame = 'LINK'),
+    -- Y la implicacion contraria, que faltaba: sin estas dos, un Xyz con
+    -- Nivel en vez de Rango pasaba las tres restricciones anteriores, y es
+    -- una carta que no existe. Con las cuatro juntas, marco y medida quedan
+    -- emparejados en los dos sentidos.
+    CONSTRAINT ck_monster_xyz_has_rank
+        CHECK (frame <> 'XYZ' OR xyz_rank IS NOT NULL),
+    CONSTRAINT ck_monster_link_has_rating
+        CHECK (frame <> 'LINK' OR link_rating IS NOT NULL),
     -- Los monstruos de Enlace no tienen DEF impresa.
     CONSTRAINT ck_monster_link_has_no_def
         CHECK (frame <> 'LINK' OR (def IS NULL AND def_undetermined = FALSE)),
@@ -616,6 +647,14 @@ COMMENT ON COLUMN card_set_translations.name IS 'Nombre comercial del set en ese
 
 -- Una impresión concreta: esta carta, en este set, con este número,
 -- esta rareza, este idioma y esta edición.
+--
+-- OJO CON LA CADENA DE BORRADO, y es deliberada: cards y card_sets
+-- cascadean hasta aquí, pero collection_items referencia esta tabla con
+-- ON DELETE RESTRICT. Resultado: borrar una carta o un set de los que se
+-- poseen ejemplares FALLA, que es lo correcto. Lo que no es aceptable es
+-- el mensaje, que habla de collection_items, una tabla que el usuario no
+-- ha tocado. El caso de uso de borrado comprueba antes si hay ejemplares
+-- y lo explica; la restriccion queda como garantia de ultimo recurso.
 CREATE TABLE card_prints (
     id            BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
     card_id       BIGINT NOT NULL REFERENCES cards (id) ON DELETE CASCADE,
@@ -879,10 +918,14 @@ CREATE INDEX idx_collection_items_sold_on ON collection_items (sold_on)
 -- Datos derivados de cada carpeta para la pantalla de estantería. NO son
 -- columnas: se calculan, para que no puedan desincronizarse de la realidad.
 --
--- card_count cuenta cartas archivadas (una por fila); copy_count suma
--- ejemplares poseídos, incluidos los guardados fuera. Contar con SUM en la
--- estantería haría que una cara de nueve huecos declarase más cartas de
--- las que caben.
+-- Tres cifras con significados distintos, y conviene no confundirlas:
+--   · card_count   cartas en la carpeta, una por fila archivada.
+--   · placed_count las que ademas tienen hueco asignado. Mientras la
+--     migracion no reparta huecos sera 0, y la diferencia con card_count
+--     es exactamente el trabajo pendiente de colocacion.
+--   · copy_count   ejemplares poseidos, incluidos los guardados fuera.
+-- Contar con SUM en la estantería haría que una cara de nueve huecos
+-- declarase más cartas de las que caben.
 CREATE VIEW binder_summary AS
 SELECT b.id,
        b.number,
@@ -892,6 +935,8 @@ SELECT b.id,
        b.shelf_position,
        COALESCE(MAX(ci.page_number), 0)                AS sheet_count,
        COUNT(ci.id) FILTER (WHERE ci.status <> 'SOLD')  AS card_count,
+       COUNT(ci.id) FILTER (WHERE ci.status <> 'SOLD'
+                              AND ci.slot_number IS NOT NULL) AS placed_count,
        COALESCE(SUM(ci.quantity) FILTER (WHERE ci.status <> 'SOLD'), 0) AS copy_count
 FROM binders b
 LEFT JOIN collection_items ci ON ci.binder_id = b.id
@@ -905,7 +950,8 @@ COMMENT ON COLUMN binder_summary.spine_color IS 'Color del lomo en #RRGGBB';
 COMMENT ON COLUMN binder_summary.slots_per_face IS 'Huecos por cara; una hoja tiene el doble';
 COMMENT ON COLUMN binder_summary.shelf_position IS 'Orden fisico en la estanteria';
 COMMENT ON COLUMN binder_summary.sheet_count IS 'Hojas de la carpeta; cada hoja tiene dos caras';
-COMMENT ON COLUMN binder_summary.card_count IS 'Cartas archivadas físicamente en la carpeta';
+COMMENT ON COLUMN binder_summary.card_count IS 'Cartas asignadas a la carpeta, tengan o no hueco concreto';
+COMMENT ON COLUMN binder_summary.placed_count IS 'De esas, las que ya tienen hueco asignado; la diferencia es lo que queda por colocar';
 COMMENT ON COLUMN binder_summary.copy_count IS 'Ejemplares poseídos de esas cartas, incluidas las copias guardadas fuera';
 
 -- ---------------------------------------------------------------------
