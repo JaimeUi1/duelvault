@@ -143,6 +143,13 @@ Más la validación que la base de datos no hace: que el hueco quepa en el
 Y la comprobación previa al borrado de una carta o un set con ejemplares, para que el
 error no venga de una tabla que el usuario no ha tocado.
 
+**`price_snapshots` empieza a escribirse aquí, no en el paso 11.** El caso de uso
+`RegistrarEjemplar` (alta de ejemplar) registra también el precio de mercado del
+momento — el propietario lo comprueba siempre al dar de alta, sea o no la primera
+copia. Escribe en `pricing` a través de un puerto de salida, mismo patrón de
+referencia por id que `CollectionItem→CardPrintId`. El paso 11 sigue siendo cuándo se
+construye la pantalla de Estadísticas; el dato nace antes.
+
 ### 9. Auditoría
 **Antes de empezar**: `./mvnw dependency:tree` para ver qué Hibernate fija Spring Boot
 4.1.1. Si es 7.4 o superior, valorar el soporte nativo de tablas de auditoría frente al
@@ -156,7 +163,10 @@ GitHub Actions con build y tests en cada push. Servicios `backend` y `frontend` 
 `docker-compose.yml`.
 
 ### 11. Estadísticas y precios
-`price_snapshots`, valor total, evolución. Con el "87 cartas pendientes de valorar" de
+La tabla `price_snapshots` ya se está poblando desde el paso 8 (alta de ejemplar);
+este paso es la pantalla — cifras destacadas, gráfica de evolución (valor de lo que
+se posee *hoy*, valorado con el precio de cada fecha, no cartera histórica exacta),
+composición y top de cartas más valiosas. Con el "87 cartas pendientes de valorar" de
 B2, que evita que el total mienta por omisión.
 
 ---

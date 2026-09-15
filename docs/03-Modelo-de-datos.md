@@ -239,6 +239,7 @@ El esquema se ha ejecutado contra PostgreSQL 16 y se han probado 12 casos límit
 - `ck_monster_single_measure` → exactamente uno entre Nivel, Rango y Link Rating.
 - `ck_cards_passcode_required` → un monstruo sin passcode se rechaza; una Ficha sin passcode se acepta.
 - `uq_card_print` **permite** el mismo número de set en dos rarezas y **rechaza** el duplicado exacto.
+- `ck_monster_xyz_has_rank` / `ck_monster_link_has_rating` (añadidas 2026-09-14, al revisar el `V1` antes del primer despliegue) → sin estas dos, un Xyz con Nivel en vez de Rango pasaba las comprobaciones anteriores, y es una carta que no existe. Con las cuatro juntas (más `ck_monster_rank_only_xyz` y `ck_monster_link_only_link`), marco y medida quedan emparejados en los dos sentidos.
 
 La `V3` se ejecutó sobre esa misma base ya poblada y se probaron otros 12 casos: color de lomo con formato inválido, dos carpetas en la misma posición de estantería, fundas de tamaño no estándar, hueco fuera de rango, página sin carpeta, hueco sin página, variante de arte sin etiqueta, etiqueta sin variante y carta que es arte alternativo de sí misma. Todos rechazados; los válidos, aceptados. La migración de `binder_number` a `binder_id` conservó las ubicaciones existentes y creó una carpeta por cada número en uso.
 
@@ -266,10 +267,10 @@ Módulo de tienda completo: `store_inventories`, `card_requests`, `card_requests
 - Los 151 duplicados exactos carta+set+rareza: decidir si son lotes de compra distintos o ruido.
 - Elegir la fuente externa concreta para el enriquecimiento del paso 4 de la migración.
 - Poblar `effect_categories`: el esquema está listo, pero clasificar 3363 cartas es trabajo aparte (un primer pase por palabras clave sobre el texto de efecto, revisado a mano, sería en sí mismo un componente interesante para la memoria).
-- Decidir si el catálogo incluye cartas que **no** posees. El buscador diseñado muestra tarjetas con "No la tienes", y el esquema lo permite (una `card` sin `collection_items`), pero cambia el volumen de datos y el sentido de la aplicación. No es un arreglo técnico, es una decisión de alcance.
+- ~~Decidir si el catálogo incluye cartas que no posees~~ — **resuelto**: hoy solo se muestran cartas poseídas; el esquema soporta lo contrario (una `card` sin `collection_items`). Política B4 en [[07-Casos-limite]]: todo endpoint de listado lleva `owned`, por defecto `true`, desde el primer día — cambio aditivo cuando se importe el catálogo completo. Detalle del parámetro en `04-Diseno-de-API-Endpoints.md`.
 - Asignar la cara y el `slot_number` de los ejemplares importados: llegan sin ninguno de los dos y la restricción de unicidad los ignora hasta que se pongan.
 - Definir la operación de **partir una fila** (B1 de [[07-Casos-limite]]): hace falta tanto para vender algunas copias como para archivar dos copias de la misma carta en huecos distintos.
 
 ---
 
-*Última actualización: 2026-09-05 — V1, V2 y V3 validadas contra PostgreSQL 16*
+*Última actualización: 2026-09-14 — V1 revisado antes del primer despliegue (dos `CHECK` cerrados, cadena de borrado carta/set→impresión→ejemplar documentada, `binder_summary` separa `card_count` de `placed_count`). V2 y V3 sin cambios desde 2026-09-05.*
