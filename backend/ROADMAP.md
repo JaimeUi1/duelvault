@@ -1,7 +1,7 @@
 # Roadmap — DuelVault backend
 
 Guía de estado para retomar el trabajo. Se actualiza a mano cuando cambia la fase.
-Última revisión: 2026-09-14.
+Última revisión: 2026-09-15.
 
 ## Fases del TFG
 
@@ -46,7 +46,7 @@ Cada paso tiene criterio de terminado. Nada se da por hecho sin él.
 ### 0. Cerrar D2
 Terminado cuando ADR-012 está escrito.
 
-### 1. Convenciones de API (`docs/04-Diseno-de-API-Endpoints.md`)
+### 1. Convenciones de API (`docs/04-Diseno-de-API-Endpoints.md`) · ✅ terminado
 No los 27 recursos: solo lo que se decide una vez y para siempre.
 
 - Paginación y ordenación.
@@ -61,6 +61,9 @@ El contrato de cada recurso se documenta con su corte vertical, con OpenAPI gene
 desde el código.
 
 Terminado cuando el documento existe y no hay que volver a discutir estas cinco cosas.
+Las cinco están cerradas: envoltorio `{metadata,data}`, `owned`, paginación/orden,
+**errores (RFC 9457, con catálogo de mensajes en BD — decisión de aprendizaje, no
+necesidad del proyecto)** y dinero/fechas/enums.
 
 ### 2. Esqueleto hexagonal
 Paquetes `com.duelvault.{catalog,collection,pricing,scanning,security,shared}`, cada
@@ -184,6 +187,14 @@ dataset, se cierra en el paso 4).
 
 ## Último trabajo hecho
 
+- **2026-09-15** — `docs/04-Diseno-de-API-Endpoints.md §4` cerrado: formato de
+  errores RFC 9457 (top-level, `application/problem+json`), mapeo de status
+  (400/401-403 reservado/404/409/422/500), jerarquía de excepciones en
+  `shared.domain` (`TipoDeError`: `tipo()`+`argumentos()`), traducción de
+  `CHECK`/`UNIQUE` en el adaptador JPA, y catálogo de mensajes en BD
+  (`error_catalog`, caché+fallback+auditoría) como decisión deliberada de
+  aprendizaje. Paso 1 del plan de trabajo del backend, terminado. Commit
+  `04bacc1`.
 - **2026-09-14** — `V1__init_schema.sql` revisado antes del primer despliegue: el
   esquema se declara en el propio fichero en vez de heredarlo de Flyway, se cierran los
   dos `CHECK` que faltaban (un Xyz sin Rango y un Enlace sin Link Rating se colaban),
