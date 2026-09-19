@@ -1,13 +1,13 @@
 # Roadmap — DuelVault backend
 
 Guía de estado para retomar el trabajo. Se actualiza a mano cuando cambia la fase.
-Última revisión: 2026-09-15.
+Última revisión: 2026-09-19.
 
 ## Fases del TFG
 
 - [x] Discovery
 - [x] Diseño de datos y pantallas (`docs/00`, `docs/02`, `docs/03`, `docs/07`, `docs/perfil-dataset.md`)
-- [x] Decisiones de arquitectura documentadas (`docs/ADRs/`, once escritos)
+- [x] Decisiones de arquitectura documentadas (`docs/ADRs/`, doce escritos)
 - [ ] **Backend ← estamos aquí**
 - [ ] Frontend (Angular)
 - [ ] Estadísticas
@@ -29,13 +29,13 @@ no son fases finales: van dentro del trabajo, donde tocan.
 - **Casos de uso** → ADR-004. Uno por problema, un solo método público, no se llaman
   entre sí; lo compartido baja al dominio.
 - **DDD táctico** → ADR-004. Modelo rico en `collection`, ligero en `catalog`.
+- **D2 · Límites de agregado y referencias entre contextos** → ADR-012. Raíces por
+  contexto (`Card`, `CardPrint`, `CardSet`, `CollectionItem`, `Binder`, `PriceSnapshot`…),
+  referencia entre agregados por id, escritura entre contextos por puerto de grano grueso
+  y lectura por proyección SQL. `shared` solo admite lo que ningún contexto posee.
 
-**Abierta, y bloquea el paso 2**
-
-- **D2 · Límites de agregado y referencias entre contextos.** Qué es raíz de agregado
-  y cómo referencia `collection` a `catalog` (id desnudo o modelo propio). Decidirlo
-  antes de crear los paquetes, o `shared` acaba siendo el cajón donde va todo.
-  → Sale como **ADR-012**.
+**Abiertas:** ninguna que bloquee el siguiente paso. Quedan `card_images` y
+`card_limitations` dentro de `Card` como decisión provisional (revisar en el paso 5).
 
 ---
 
@@ -43,8 +43,8 @@ no son fases finales: van dentro del trabajo, donde tocan.
 
 Cada paso tiene criterio de terminado. Nada se da por hecho sin él.
 
-### 0. Cerrar D2
-Terminado cuando ADR-012 está escrito.
+### 0. Cerrar D2 · ✅ terminado
+Terminado cuando ADR-012 está escrito. Aceptado el 2026-09-19.
 
 ### 1. Convenciones de API (`docs/04-Diseno-de-API-Endpoints.md`) · ✅ terminado
 No los 27 recursos: solo lo que se decide una vez y para siempre.
@@ -73,6 +73,9 @@ Se añade `spring-boot-starter-data-jpa` aquí (ADR-011).
 Terminado cuando compila con los paquetes vacíos y hay un test de **ArchUnit** que
 falla si `domain` importa Spring o JPA. Ese test es la prueba de que la hexagonal no
 es de mentira.
+
+Y una segunda regla de ArchUnit (ADR-012): el dominio de un contexto solo puede importar
+del dominio de otro los **tipos de identidad** (`CardPrintId`, `CardId`…), nada más.
 
 ### 3. Testcontainers desde el primer día
 Base de pruebas de integración contra PostgreSQL 16 real con las migraciones aplicadas.
@@ -176,7 +179,7 @@ B2, que evita que el total mienta por omisión.
 
 ## Regla transversal: un ADR por decisión, escrita en el momento
 
-`docs/ADRs/` tiene once. **Un ADR no se edita**: si la decisión cambia, se escribe uno
+`docs/ADRs/` tiene doce. **Un ADR no se edita**: si la decisión cambia, se escribe uno
 nuevo que lo sustituye. Cada fase se cierra con el suyo antes de pasar a la siguiente.
 
 Dos están en estado `Propuesta` a propósito, porque la decisión no se ha tomado:
@@ -187,6 +190,11 @@ dataset, se cierra en el paso 4).
 
 ## Último trabajo hecho
 
+- **2026-09-19** — **ADR-012** aceptado (`docs/ADRs/ADR-012-limites-de-agregado-y-referencias-entre-contextos.md`):
+  raíces de agregado por contexto, referencia por id, puerto de grano grueso para
+  escritura entre contextos (`RegistrarEjemplar`) y proyección SQL para lectura en las dos
+  direcciones. Contrastado con las diez pantallas (`docs/05`, `docs/06`). Paso 0 del plan
+  de trabajo, terminado. Desbloquea el paso 2.
 - **2026-09-15** — `docs/04-Diseno-de-API-Endpoints.md §4` cerrado: formato de
   errores RFC 9457 (top-level, `application/problem+json`), mapeo de status
   (400/401-403 reservado/404/409/422/500), jerarquía de excepciones en
@@ -221,6 +229,13 @@ dataset, se cierra en el paso 4).
 
 Pequeña, pero se olvida:
 
+- **Sets: alta y consulta.** Decidido el 2026-09-19 y contratos en `docs/05` (sección
+  "Sets"): `POST /card-sets` con el caso de uso `RegistrarSet` (paso 8) y
+  `GET /card-sets` con `owned` (paso 5). Pantalla 11 (Sets: listado con interruptor
+  «Mis sets / Todos» y alta) añadida a `docs/02`; el atajo «+ Crear set» del formulario
+  de alta se mantiene. Falta dibujar en `docs/06` esa pantalla y el atajo, y el selector
+  con búsqueda del filtro `cardSet[]` del buscador (decidido: selector, no lista con
+  recuentos).
 - Añadir a `07-Casos-limite` el caso **A12**: borrar una carta o un set de los que se
   poseen ejemplares falla con un mensaje que habla de `collection_items`.
 - `07-Casos-limite §D` todavía dice que las filas legadas sin hueco se aceptan *"porque

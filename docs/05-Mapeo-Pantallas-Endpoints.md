@@ -232,6 +232,7 @@ vertical 2, no se pospone ninguno.
 | Rareza | `rarity[]` | `card_prints.rarity_id` | EXISTS: el resultado es por carta, no por impresión |
 | **Edición** (nuevo) | `edition[]` | `card_prints.edition` | EXISTS, mismo motivo |
 | **Idioma de impresión** (nuevo) | `language[]` | `card_prints.language_code` | EXISTS, mismo motivo |
+| **Set** (nuevo) | `cardSet[]` | `card_prints.card_set_id` | EXISTS, mismo motivo. **No aparece en `facets`**: se elige con un selector con búsqueda sobre `GET /card-sets?q=`. Es lo que sigue el enlace desde la pantalla 11 (ver "Sets") |
 | **Restricción** (nuevo) | `banlistFormat`, `banlistStatus[]` | `card_limitations` (vigente = fila más reciente por carta+formato) | — |
 | Solo las que tengo | `owned` (ya decidido en `04`) | política B4 | — |
 | Duplicadas | `duplicated` | `collection_items` con `quantity > 1` para esa carta | fuerza `owned=true` |
@@ -282,12 +283,33 @@ Ejemplo con `frame=LINK` activo: `level`/`xyzRank`/`pendulumScale`/`def`
 salen `null` — Enlace no tiene ninguno de los cuatro. El front no necesita
 saber por qué, solo desactivar el control.
 
+### Qué devuelve `facets` cuando una dimensión no aplica
+
+Decidido el 2026-09-19. Es el mismo criterio que `ranges`, aplicado a las listas:
+**el front no conoce las reglas de aplicabilidad, las lee del dato.**
+
+- **Una dimensión que no aplica devuelve su lista vacía (`[]`) en `facets`.** El front
+  oculta o desactiva ese grupo de filtros cuando ve una lista vacía. Por ejemplo, con
+  `cardClass=SPELL` las listas `attribute`, `frame` y `monsterType` salen `[]`: las
+  mágicas no tienen ninguna de las tres.
+- **Una dimensión que sí aplica lista siempre todas sus opciones**, con `count: 0` en las
+  que no tengan resultados bajo los filtros activos. Así una lista vacía significa solo
+  «no aplica», nunca «aplica pero no hay resultados».
+- **Cuándo aplica cada dimensión** lo fija la columna «Solo si» de la tabla de filtros.
+  Es la misma regla que el `WHERE` de cada consulta de faceta, no una segunda tabla de
+  reglas que mantener.
+- **El backend no dice cómo se dibuja cada filtro.** El tipo de control (casillas,
+  slider, interruptor, selector con búsqueda) lo decide el front y se deduce de la forma
+  del parámetro: lista (`x[]`), rango (`xMin`/`xMax`), booleano, texto. Lo único
+  presentacional que manda el backend es el `label` de cada opción, para que Angular no
+  lleve las traducciones de todos los valores.
+
 **Decidido hoy:**
 
 - `q` busca nombre + texto de efecto + passcode **a la vez** (OR), una sola
   caja, sin detectar formato ni pedir que el usuario elija modo.
-- Los 17 filtros **nuevo** entran todos en el corte vertical 2 (paso 6), no
-  se posponen.
+- Todos los filtros marcados **nuevo** en la tabla entran en el corte vertical 2
+  (paso 6), no se posponen.
 
 **Sigue abierto, sin resolver hoy:**
 
@@ -574,16 +596,20 @@ Por dentro de `POST /collection-items`:
      efectos físicos es dónde la archivas.
 
 ```json
-// 409 — la ubicación no coincide, decide el usuario
+// 409 — la ubicación no coincide, decide el usuario.
+// RFC 9457 puro, sin envolver en {metadata, data} (04 §4). existingItem y
+// submittedLocation son miembros de extensión en la raíz.
 {
-  "metadata": { "timestamp": "...", "requestId": "...", "apiVersion": "v1" },
-  "data": {
-    "existingItem": {
-      "collectionItemId": 501, "cardPrintId": 88, "condition": "NEAR_MINT",
-      "quantity": 3, "binderId": 3, "pageNumber": 12, "face": "FRONT", "slotNumber": 1
-    },
-    "submittedLocation": { "binderId": 7, "pageNumber": 2 }
-  }
+  "type": "https://duelvault.dev/problems/ejemplar-duplicado",
+  "title": "Ya tienes esta carta",
+  "status": 409,
+  "detail": "Ya tienes 3 copias en la carpeta 3; esta iría a la carpeta 7",
+  "instance": "/collection-items",
+  "existingItem": {
+    "collectionItemId": 501, "cardPrintId": 88, "condition": "NEAR_MINT",
+    "quantity": 3, "binderId": 3, "pageNumber": 12, "face": "FRONT", "slotNumber": 1
+  },
+  "submittedLocation": { "binderId": 7, "pageNumber": 2 }
 }
 ```
 
@@ -615,6 +641,119 @@ de la fila nueva.
   sin pantalla que servir todavía. Anotado en `06`.
 - Origen "viene del escaneo" (banner amarillo, código detectado) — depende
   de `scanning`, post-MVP.
+
+## Sets — pantalla 11 (listado y alta)
+
+Pantalla nueva del 2026-09-19, sin mockup. Sale de dos necesidades: comprar un producto
+de un set que no está catalogado no puede bloquear el alta, y hace falta consultar los
+sets. Decidido:
+
+- **Una sola pantalla** con el listado de sets y un interruptor «Mis sets / Todos», que
+  es el parámetro `owned` de `GET /card-sets`. Un botón «Nuevo set» abre el formulario de
+  alta en la misma pantalla.
+- **El atajo «+ Crear set»** del selector de set del formulario de alta de carta
+  (pantalla 6) se mantiene y llama al mismo `POST /card-sets`, para no salir del
+  formulario al dar de alta varias cartas de un set nuevo.
+- **El buscador es solo de cartas.** Los sets no se buscan ahí; el filtro `cardSet[]`
+  sirve para buscar cartas dentro de un set.
+
+Módulo `catalog`: `CardSet` es raíz propia (ADR-012).
+
+| Endpoint | Módulo | Devuelve | Paso roadmap |
+|---|---|---|---|
+| `POST /card-sets` | `catalog` | El set creado | Paso 8, junto a `RegistrarEjemplar`, que lo necesita |
+| `GET /card-sets` | `catalog` (proyección, lee `collection_items`) | Sets con lo que se posee de cada uno | Paso 5 |
+
+### `POST /card-sets` — caso de uso `RegistrarSet`
+
+Lo llaman dos sitios del front: el botón «Nuevo set» de la pantalla 11 y el atajo
+«+ Crear set «RA05»» del formulario de alta de carta (pantalla 6). En el segundo caso, el
+front envía **después** `POST /collection-items` con el `cardSetId` devuelto.
+`RegistrarEjemplar` no llama a `RegistrarSet` (ADR-004: los casos de uso no se llaman
+entre sí).
+
+```json
+{
+  "setPrefix": "RA05",
+  "setTypeId": 3,
+  "tcgReleaseDate": "2026-08-15",
+  "totalCards": 100,
+  "translations": [
+    { "languageCode": "ES", "name": "Rarity Collection 5" }
+  ]
+}
+```
+
+- Obligatorios: `setPrefix` (hasta 10 caracteres; se normaliza a mayúsculas y sin
+  espacios) y al menos una traducción con nombre. El nombre vive en
+  `card_set_translations`, no en `card_sets`, así que la base de datos no obliga a
+  tenerlo: lo exige el constructor del dominio, y `400` en el borde.
+- Opcionales: `setTypeId`, `tcgReleaseDate`, `totalCards` (mayor que 0 si viene).
+- **`409` si el prefijo ya existe** (`set-duplicado`, `ConflictoDeEstadoException`).
+  Es RFC 9457 puro, según `04 §4`, con el miembro de extensión `existingSetId` para que
+  el diálogo seleccione el set que ya está en vez de fallar.
+
+```json
+// 201 — cuerpo: el mismo objeto que un item de GET /card-sets, con los recuentos a 0
+{
+  "metadata": { "timestamp": "...", "requestId": "...", "apiVersion": "v1" },
+  "data": {
+    "id": 1241, "setPrefix": "RA05", "name": "Rarity Collection 5",
+    "setType": { "id": 3, "label": "Colección" },
+    "tcgReleaseDate": "2026-08-15", "totalCards": 100,
+    "ownedDistinctNumbers": 0, "ownedCopies": 0
+  }
+}
+```
+
+### `GET /card-sets` — proyección de solo lectura
+
+**Query params:**
+
+| Param | Notas |
+|---|---|
+| `owned` | Por defecto `true`: solo sets con al menos un ejemplar que no esté `SOLD` (mismo criterio que `binder_summary` y `GET /collection/summary`). **El interruptor «Mis sets / Todos» de la pantalla 11 es este parámetro** (`true` / `false`). **El selector del formulario de alta también manda `owned=false`**: un set recién creado no tiene ejemplares y, si no, no aparecería. |
+| `q` | Opcional. Prefijo o nombre, sin acentos ni mayúsculas. Sirve para el desplegable con búsqueda. |
+| `sort` | `NAME_ASC` (por defecto), `RELEASE_DESC`, `OWNED_DESC` (más números poseídos primero). |
+| `page`, `size` | Paginado: hoy son unos 173, y con el catálogo completo importado serían ~1.240. |
+
+```json
+{
+  "metadata": { "timestamp": "...", "requestId": "...", "apiVersion": "v1" },
+  "data": {
+    "items": [
+      {
+        "id": 12, "setPrefix": "RA01", "name": "25th Anniversary Rarity Collection",
+        "setType": { "id": 3, "label": "Colección" },
+        "tcgReleaseDate": "2023-04-28", "totalCards": 100,
+        "ownedDistinctNumbers": 41, "ownedCopies": 58
+      }
+    ],
+    "page": { "number": 0, "size": 20, "totalElements": 173, "totalPages": 9 }
+  }
+}
+```
+
+- **`ownedDistinctNumbers` es `COUNT(DISTINCT set_number)`, no cartas distintas.** Es la
+  medida comparable con `totalCards`, que cuenta números del listado oficial. Un mismo
+  número existe en varias rarezas (202 casos reales), y contarlas por separado
+  inflaría el avance. `ownedCopies` es `SUM(quantity)`.
+- `totalCards` puede ser `null` si no se conoce. El porcentaje de avance lo calcula el
+  front, y solo si hay total.
+- `name` va en un solo idioma, ES con caída a otro disponible si falta la traducción.
+  Mismo criterio que los demás listados; no está escrito todavía en `04`.
+- **Ver las cartas de un set** no es un endpoint nuevo: es `GET /cards?cardSet=12` (filtro
+  añadido a la tabla de la pantalla 4). Cada set del listado enlaza al buscador con ese
+  filtro puesto.
+- **El filtro `cardSet[]` del buscador no lleva contadores en `facets`** (decidido
+  2026-09-19): son cientos de opciones (173 hoy, ~1.240 con el catálogo completo). El
+  control es un **selector con búsqueda** que reutiliza `GET /card-sets?q=`. Se pierde el
+  recuento por set bajo los filtros activos, a cambio de no engordar la respuesta de
+  `GET /cards` ni recalcular un recuento por set en cada búsqueda.
+- No hay `GET /card-sets/{id}`: nada de lo diseñado lo necesita hoy.
+
+**Cae en el patrón de ADR-012:** `catalog` es dueño del endpoint y lee `collection_items`
+por SQL, solo lectura, sin pasar por el dominio.
 
 ## Pantalla 5 — Estadísticas
 

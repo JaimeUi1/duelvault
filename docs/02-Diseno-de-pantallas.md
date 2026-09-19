@@ -53,6 +53,7 @@ Es el ancla visual del producto y viene del propio juego: cada tipo de carta tie
 | 8 | Escaneo (resultado dudoso) | **El caso peor, no el ideal** | Confianza al 62 %, dígito dudoso marcado, dos candidatas, "ninguna: buscar" |
 | 9 | Detalle en móvil | La ficha donde no caben dos columnas | Pestañas Datos / Mi colección / Ediciones |
 | 10 | Acceso admin | Entrar como propietario | Sobrio; enlace de salida a la vista pública |
+| 11 | Sets | Consultar los sets y darlos de alta | **Añadida el 2026-09-19, sin boceto.** Interruptor «Mis sets / Todos»; el botón «Nuevo set» abre el formulario en la misma pantalla. Ver `05` y `06` |
 
 ## 4. Decisiones de diseño que conviene defender
 
@@ -68,9 +69,10 @@ Es el ancla visual del producto y viene del propio juego: cada tipo de carta tie
 
 ## 5. Pendiente
 
-- Definir los estados de carga, vacío y error de cada pantalla (hay convenciones esbozadas, falta escribirlas).
-- Decidir el plan B de la animación de la estantería por si resulta cara de implementar en Angular.
-- Revisar contraste real una vez implementado, no solo sobre el boceto.
+Todo lo pendiente de diseño visual (estados de carga, vacío y error, plan B de la animación
+de la estantería, contraste real, y las pantallas y flujos sin boceto) está consolidado en
+`[[06-Carencias-Diseno-UI]]`, que sirve de brief para Claude Design. No se repite aquí para
+que no se desincronice.
 
 ---
 

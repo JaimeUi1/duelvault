@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 `backend/` del TFG **DuelVault**: API REST para catalogar una colección real de
 Yu-Gi-Oh! (4.533 filas históricas, 27 tablas). Monorepo: `backend/`, `frontend/`
-(Angular, sin empezar), `db/`, `docs/` (diseño cerrado: modelo de datos, 10
+(Angular, sin empezar), `db/`, `docs/` (diseño cerrado: modelo de datos, 11
 pantallas y ADRs).
 
 **Estado real del backend hoy:** solo existe `BackendApplication.java`. Los
@@ -91,7 +91,7 @@ y dentro `domain/ · application/{usecase,port/{in,out}} · infrastructure/{in/w
 ### DDD táctico, donde paga
 
 - **`collection` lleva modelo rico**: objetos valor (`Ubicacion` con carpeta, hoja,
-  cara y hueco; `Money`; `Passcode`), comportamiento en la raíz, y servicio de
+  cara y hueco; `Money`, que vive en `shared`), comportamiento en la raíz, y servicio de
   dominio para lo que cruza agregados (recolocar, validar hueco contra
   `slots_per_face`).
 - **`catalog` se modela ligero** a propósito: una carta no tiene invariantes propias
@@ -100,6 +100,12 @@ y dentro `domain/ · application/{usecase,port/{in,out}} · infrastructure/{in/w
   `MonsterCardRepository`: se carga y se guarda `Card` entera.
 - **Referencia entre agregados por id**: `CollectionItem` guarda un `CardPrintId`,
   no un `CardPrint`.
+- **Límites de agregado y contextos (ADR-012)**: `CardPrint` es raíz propia (no cuelga de
+  `Card`); `Binder` es raíz separada de `CollectionItem`; `Passcode` pertenece a `catalog`.
+  Un contexto solo importa del dominio de otro sus tipos de identidad. La escritura entre
+  contextos va por puerto de salida; la lectura de pantallas, por proyección SQL. En
+  `shared` solo entra lo que usan dos o más contextos y ninguno posee (`Money`, jerarquía
+  de errores).
 - Sin setters públicos en el dominio. Constructores que validan.
 - Nada de eventos de dominio, event sourcing ni CQRS con dos bases: no hay nada
   que reaccione a nada.
@@ -177,7 +183,7 @@ de Konami, no del dataset propio.
 ## Decisiones de arquitectura
 
 `docs/ADRs/` con formato *Contexto → Decisión → Alternativas → Consecuencias*.
-Nueve aceptados, dos en estado `Propuesta` (003 autenticación, 006 duplicados del
+Diez aceptados, dos en estado `Propuesta` (003 autenticación, 006 duplicados del
 dataset). **Un ADR no se edita: si la decisión cambia, se escribe uno nuevo que lo
 sustituye.** Cada fase se cierra con el suyo.
 

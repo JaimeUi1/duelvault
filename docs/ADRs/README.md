@@ -43,11 +43,10 @@ alternativas se descartaron, que es lo que se pierde en cuanto pasan unos meses.
 | [009](ADR-009-carpetas-como-entidad.md) | Las carpetas son una entidad, no un número | Aceptada |
 | [010](ADR-010-auditoria-con-envers.md) | Auditoría selectiva con Envers | Aceptada |
 | [011](ADR-011-persistencia-jpa-vs-jdbc.md) | JPA, con JdbcClient reservado para proyecciones | Aceptada |
+| [012](ADR-012-limites-de-agregado-y-referencias-entre-contextos.md) | Límites de agregado y referencias entre contextos | Aceptada |
 
 ## Pendientes de escribir
 
 Se abrirán cuando la decisión se tome, no antes:
 
-- **ADR-012 · Límites de agregado y referencias entre contextos.** Qué es raíz de
-  agregado y cómo referencia `collection` a `catalog`.
 - **ADR-013 · Estrategia de despliegue.** Sale de la fase de DevOps.
