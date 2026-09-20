@@ -9,11 +9,12 @@ Yu-Gi-Oh! (4.533 filas históricas, 27 tablas). Monorepo: `backend/`, `frontend/
 (Angular, sin empezar), `db/`, `docs/` (diseño cerrado: modelo de datos, 11
 pantallas y ADRs).
 
-**Estado real del backend hoy:** solo existe `BackendApplication.java`. Los
-paquetes hexagonales, el dominio y los adaptadores están por crear. No hay tests
-ni CI. El `pom.xml` trae `spring-boot-starter-jdbc` + Flyway; `data-jpa` se añade
-en cuanto empiece la capa de persistencia (ver ADR-011). `application.yaml` ya
-tiene datasource + Flyway configurados.
+**Estado real del backend hoy:** existe `BackendApplication.java` y el árbol de
+paquetes hexagonal (6 contextos, solo con `package-info.java`). El dominio, los
+casos de uso y los adaptadores están por crear. Solo hay el smoke test generado:
+faltan los tests de ArchUnit (paso 2, bloque C) y Testcontainers. No hay CI. El
+`pom.xml` trae `data-jpa`, JDBC, Flyway y ArchUnit. `application.yaml` ya tiene
+datasource + Flyway configurados.
 
 ## Comandos
 

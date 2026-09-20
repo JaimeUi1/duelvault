@@ -1,7 +1,7 @@
 # Roadmap — DuelVault backend
 
 Guía de estado para retomar el trabajo. Se actualiza a mano cuando cambia la fase.
-Última revisión: 2026-09-19.
+Última revisión: 2026-09-20.
 
 ## Fases del TFG
 
@@ -65,7 +65,7 @@ Las cinco están cerradas: envoltorio `{metadata,data}`, `owned`, paginación/or
 **errores (RFC 9457, con catálogo de mensajes en BD — decisión de aprendizaje, no
 necesidad del proyecto)** y dinero/fechas/enums.
 
-### 2. Esqueleto hexagonal
+### 2. Esqueleto hexagonal · 🔄 en curso (bloques A y B hechos)
 Paquetes `com.duelvault.{catalog,collection,pricing,scanning,security,shared}`, cada
 uno con `domain/ · application/{usecase,port/{in,out}} · infrastructure/{in/web,out/jpa}`.
 Se añade `spring-boot-starter-data-jpa` aquí (ADR-011).
@@ -81,6 +81,34 @@ ningún contexto es su dueño. Cada paquete lleva un `package-info.java` con su 
 
 Y una segunda regla de ArchUnit (ADR-012): el dominio de un contexto solo puede importar
 del dominio de otro los **tipos de identidad** (`CardPrintId`, `CardId`…), nada más.
+
+Avance:
+
+- [x] **A. Dependencias.** `spring-boot-starter-data-jpa` (+ su starter de test) y
+  `archunit-junit5` (versión en la propiedad `archunit.version`, el BOM de Boot no lo
+  gestiona). `./mvnw test` verde con la base recreada desde cero.
+- [x] **B. Árbol de paquetes.** Seis contextos, 33 `package-info.java`, sin `out/jdbc`
+  (ADR-011). `shared` sin `application`. Verificado: la línea `package` coincide con la
+  ruta en los 33 y compila.
+- [ ] **C. ArchUnit, reglas de `domain`.** Regla 1 (dominio con lista blanca: `java..`,
+  su contexto y `shared.domain`) y regla 6 (solo `*Id` entre contextos). Cada una se ve en
+  rojo con una clase temporal antes de darla por buena.
+- [ ] **D. ArchUnit, resto.** `domain` no depende de `application`/`infrastructure`;
+  `application` no depende de `infrastructure`; `in/web` y `out/*` no se conocen; `@Entity`
+  solo en `..out.jpa..`; `application` de un contexto no depende de otro (salvo ids); los
+  casos de uso no se llaman entre sí; sin ciclos entre contextos.
+- [ ] **E. Cierre.** `./mvnw verify` verde, este documento actualizado y la nota
+  «necesario vs elegido» de los contextos casi vacíos en el doc de diseño.
+
+Puntos abiertos del bloque C:
+
+- **Qué cuenta como «tipo de identidad».** No basta con `*Id`: el ADR-012 §4 dice que
+  `Passcode` pertenece a `catalog` aunque `collection` lo reciba en un comando. Propuesta:
+  `*Id` o `Passcode`, en una constante con comentario que cite el ADR.
+- **`should` vacío.** Sin clases en los paquetes, ArchUnit falla por defecto. Usar
+  `allowEmptyShould(true)` con un `TODO` de retirada cuando haya clases en `domain`.
+- **`import` de tests.** `ImportOption.DoNotIncludeTests`, para que el paquete
+  `architecture` no entre en las reglas.
 
 ### 3. Testcontainers desde el primer día
 Base de pruebas de integración contra PostgreSQL 16 real con las migraciones aplicadas.
@@ -195,6 +223,13 @@ dataset, se cierra en el paso 4).
 
 ## Último trabajo hecho
 
+- **2026-09-20** — **Paso 2, bloques A y B.** `pom.xml` con `data-jpa` y ArchUnit
+  (`2d14172`) y esqueleto de paquetes hexagonales por contexto, 33 `package-info.java`
+  (`c165597`), en la rama `feat/esqueleto-hexagonal`. Decidido: contexto como paquete de
+  primer nivel y capas dentro (frente a capas primero o módulos de Maven por capa), y la
+  infraestructura transversal en `shared/infrastructure` (`ed6a6a8`, ya en `main`).
+  Comprobado de paso: Hibernate resuelve a **7.4.5.Final**, así que el paso 9 arranca con la
+  decisión Envers frente a auditoría nativa abierta de verdad.
 - **2026-09-19** — **ADR-012** aceptado (`docs/ADRs/ADR-012-limites-de-agregado-y-referencias-entre-contextos.md`):
   raíces de agregado por contexto, referencia por id, puerto de grano grueso para
   escritura entre contextos (`RegistrarEjemplar`) y proyección SQL para lectura en las dos
@@ -223,12 +258,16 @@ dataset, se cierra en el paso 4).
 
 ## Estado real del código
 
-- Solo existe `BackendApplication.java`. **No hay paquetes hexagonales, ni dominio, ni
-  adaptadores todavía.**
+- Existen `BackendApplication.java` y el árbol de paquetes hexagonal (6 contextos, 33
+  `package-info.java`). **Ninguna clase de dominio, caso de uso ni adaptador todavía**;
+  los paquetes solo llevan documentación.
+- `pom.xml` con `data-jpa`, Flyway, JDBC y ArchUnit (test). Hibernate 7.4.5.Final.
 - `docker-compose.yml` solo levanta Postgres 16. Backend y frontend no están en compose.
-- Migraciones Flyway (V1 + V2) escritas y aplicando con `./mvnw spring-boot:run`.
-- Sin tests de ninguna clase. Sin CI.
-- `docs/` no tiene todavía documento de diseño de API (`04-...`).
+- Migraciones Flyway (V1 + V2) aplicando desde cero. Flyway cuenta 3 entradas en su
+  historial: la marca de creación del esquema y las dos migraciones.
+- Un único test: `BackendApplicationTests.contextLoads()` (smoke test generado). Ningún
+  test de ArchUnit ni de Testcontainers todavía. Sin CI.
+- `docs/04-Diseno-de-API-Endpoints.md` existe (paso 1 cerrado).
 
 ## Deuda de documentación pendiente
 
