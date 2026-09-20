@@ -105,7 +105,9 @@ y dentro `domain/ · application/{usecase,port/{in,out}} · infrastructure/{in/w
   Un contexto solo importa del dominio de otro sus tipos de identidad. La escritura entre
   contextos va por puerto de salida; la lectura de pantallas, por proyección SQL. En
   `shared` solo entra lo que usan dos o más contextos y ninguno posee (`Money`, jerarquía
-  de errores).
+  de errores). La infraestructura transversal (`@RestControllerAdvice` RFC 9457,
+  envoltorio `{metadata,data}`, paginación, adaptador de `error_catalog`) vive en
+  `shared/infrastructure/{in/web,out/...}`.
 - Sin setters públicos en el dominio. Constructores que validan.
 - Nada de eventos de dominio, event sourcing ni CQRS con dos bases: no hay nada
   que reaccione a nada.

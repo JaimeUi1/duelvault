@@ -74,6 +74,11 @@ Terminado cuando compila con los paquetes vacíos y hay un test de **ArchUnit** 
 falla si `domain` importa Spring o JPA. Ese test es la prueba de que la hexagonal no
 es de mentira.
 
+Decidido el 2026-09-20: la infraestructura transversal (handler RFC 9457, envoltorio
+`{metadata,data}`, paginación, adaptador de `error_catalog`) va en
+`shared/infrastructure/{in/web,out/...}`. Mismo criterio de admisión que el ADR-012 §4:
+ningún contexto es su dueño. Cada paquete lleva un `package-info.java` con su propósito.
+
 Y una segunda regla de ArchUnit (ADR-012): el dominio de un contexto solo puede importar
 del dominio de otro los **tipos de identidad** (`CardPrintId`, `CardId`…), nada más.
 
